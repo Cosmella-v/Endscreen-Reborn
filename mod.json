@@ -1,0 +1,25 @@
+{
+	"geode": "5.8.2",
+	"gd": {
+		"win": "2.2081",
+		"android": "2.2081",
+		"mac": "2.2081",
+		"ios": "2.2081"
+	},
+	"id": "suntle.endscreen-reborn",
+	"name": "Endscreen Reborn",
+	"version": "v1.0.0",
+	"developer": "Suntle",
+	"description": "",
+	"dependencies": {
+		"geode.node-ids": ">=v1.23.3"
+	},
+	"settings": {
+		"summary-bg-setting":{
+			"type": "bool",
+			"name": "Stats Background",
+			"description": "Adds a transparent background behind your stats.",
+			"default": true
+		}
+	}
+}
