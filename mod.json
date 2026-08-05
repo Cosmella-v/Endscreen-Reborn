@@ -21,5 +21,8 @@
 			"description": "Adds a transparent background behind your stats.",
 			"default": true
 		}
+	},
+	"links": {
+		"source": "https://github.com/Suntle/Endscreen-Reborn"
 	}
 }
