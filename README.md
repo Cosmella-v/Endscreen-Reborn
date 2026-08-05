@@ -1,6 +1,7 @@
 # Endscreen Reborn
 <img src="logo.png" width="150" alt="Endscreen Reborn Logo" />
-**This mod brings new life to the end screen!**/nIt adds new animations when completing a level.
+**This mod brings new life to the end screen!**
+It adds new animations when completing a level.
 
 ## Credits
 
