@@ -1,4 +1,4 @@
-# Endscreen Plus
+# Endscreen Reborn
 
 **This mod brings new life to the end screen!**
 It adds new animations when completing a level.
