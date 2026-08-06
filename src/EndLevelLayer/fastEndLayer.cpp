@@ -6,7 +6,7 @@ using namespace geode::prelude;
 using namespace geode::cocos;
 class $modify(InstantEndLevelLayer, EndLevelLayer) {
 	static void onModify(auto &self) {
-			(void)self.setHookPriority("EndLevelLayer::showLayer", Priority::First);
+			(void)self.setHookPriority("EndLevelLayer::showLayer", Priority::Stub);
 	}
 	virtual void showLayer(bool instant) {
 		/*
@@ -19,7 +19,7 @@ class $modify(InstantEndLevelLayer, EndLevelLayer) {
 class $modify(play, PlayLayer) {
 	static void onModify(auto& self) {
        	(void)self.setHookPriority("PlayLayer::levelComplete", Priority::Last);
-		(void)self.setHookPriority("PlayLayer::showEndLayer", Priority::First);
+		(void)self.setHookPriority("PlayLayer::showEndLayer", Priority::Stub);
     }
 	struct Fields {
 		bool m_hookEnabled = false;

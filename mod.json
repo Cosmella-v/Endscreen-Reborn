@@ -9,7 +9,7 @@
 	"id": "suntle.endscreen-reborn",
 	"name": "Endscreen Reborn",
 	"version": "v1.0.1-beta.1",
-	"developer": "Suntle",
+	"developers": ["Suntle","Cosmella"],
 	"description": "",
 	"dependencies": {
 		"geode.node-ids": ">=v1.23.3"
