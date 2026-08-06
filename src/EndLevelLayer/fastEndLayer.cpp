@@ -1,13 +1,25 @@
 #include <Geode/Geode.hpp>
 using namespace geode::prelude;
 #include <Geode/modify/PlayLayer.hpp>
+#include <Geode/modify/EndLevelLayer.hpp>
 #include <Geode/utils/cocos.hpp>
 using namespace geode::cocos;
-
+class $modify(InstantEndLevelLayer, EndLevelLayer) {
+	static void onModify(auto &self) {
+			(void)self.setHookPriority("EndLevelLayer::showLayer", Priority::Stub);
+	}
+	virtual void showLayer(bool instant) {
+		/*
+		this is the proper way of instant showLayer
+		*/
+		instant = true;
+		EndLevelLayer::showLayer(instant);
+	};
+};
 class $modify(play, PlayLayer) {
 	static void onModify(auto& self) {
        	(void)self.setHookPriority("PlayLayer::levelComplete", Priority::Last);
-		(void)self.setHookPriority("PlayLayer::showEndLayer", Priority::First);
+		(void)self.setHookPriority("PlayLayer::showEndLayer", Priority::Stub);
     }
 	struct Fields {
 		bool m_hookEnabled = false;
