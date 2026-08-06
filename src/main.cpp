@@ -3,6 +3,11 @@ using namespace geode::prelude;
 #include <Geode/Geode.hpp>
 #include <Geode/modify/EndLevelLayer.hpp>
 
+/*add the qolmod to affect the CheatIndicator because it is kinda idless*/
+namespace qolmod {
+    class CheatIndicator : public cocos2d::CCNode {};
+}
+
 #define getChildFromMainLayer(id) this->m_mainLayer->getChildByID(id)
 
 #define CCWait(time, target) CCSequence::createWithTwoActions(CCDelayTime::create(time), target)
@@ -20,10 +25,18 @@ using namespace geode::prelude;
 
 AddSetting(bool, summarySetting, "summary-bg-setting")
 
-static void HandleNode(CCNode* mainLayer, WeakRef<CCNode> left, WeakRef<CCNode> right, CCNode* Target) {
+static void HandleNode(CCNode* mainLayer, 
+	WeakRef<CCNode> left, WeakRef<CCNode> right, 
+	WeakRef<CCNode> TopLeft, WeakRef<CCNode> TopRight,
+	CCNode* Target) {
 	auto pos = Target->convertToWorldSpace({0, 0});
 	pos = mainLayer->convertToNodeSpace(pos);
-	auto ParentNoderef = (pos.x > (mainLayer->getContentWidth() / 2)) ? left: right;
+	WeakRef<CCNode> ParentNoderef = 
+	(pos.y < mainLayer->getContentHeight() * 0.75) ? 
+	((pos.x > (mainLayer->getContentWidth() / 2)) ? right: left) 
+	:
+	((pos.x > (mainLayer->getContentWidth() / 2)) ? TopRight: TopLeft);
+
 	if (auto ParentNode = ParentNoderef.lock()) {
 		Target->retain();
 		Target->removeFromParentAndCleanup(false);
@@ -32,25 +45,45 @@ static void HandleNode(CCNode* mainLayer, WeakRef<CCNode> left, WeakRef<CCNode> 
 		ParentNode->updateLayout();
 	}
 }
-class $modify(endscreen, EndLevelLayer) {
+class $modify(endscreenRB, EndLevelLayer) {
 	struct Fields {
 		CCSize m_winSize;
 		CCNode *m_downAnimation = nullptr;
+		CCNode *m_upAnimation = nullptr;
 	};
 	static void onModify(auto &self) {
 		(void)self.setHookPriority("EndLevelLayer::showLayer", Priority::Last);
 		(void)self.setHookPriority("EndLevelLayer::onHideLayer", Priority::Replace);
-		(void)self.setHookPriority("EndLevelLayer::customSetup", Priority::First);
+		// Delay functions
+		(void)self.setHookPriority("EndLevelLayer::playStarEffect", Priority::Last);
+		(void)self.setHookPriority("EndLevelLayer::playCoinEffect", Priority::Last);
+		(void)self.setHookPriority("EndLevelLayer::playCurrencyEffect", Priority::Last);
+		(void)self.setHookPriority("EndLevelLayer::playDiamondEffect", Priority::Last);
 	}
+	/* 
+		we need to play it later because we have a animation!
+		it should be zero unless another mod is doing something to it which then we make sure it appears to atleast 3.7 delay 
+	*/ 
+	#define delay(fun) void fun(float startDelay) { \
+		if (startDelay < 3.7) startDelay = 3.7; \
+		EndLevelLayer::fun(startDelay); \
+	};
+	delay(playStarEffect)
+	delay(playCoinEffect)
+	delay(playCurrencyEffect)
+	delay(playDiamondEffect)
+	#undef delay
+	
 
 	void SetupModCompact() {
 		auto winSize = m_fields->m_winSize;
 		m_fields->m_downAnimation = CCNode::create();
-		m_fields->m_downAnimation->setID("mod-storage"_spr);
-
+		m_fields->m_downAnimation->setID("mod-storage-bottom"_spr);
+		m_fields->m_upAnimation = CCNode::create();
+		m_fields->m_upAnimation->setID("mod-storage-top"_spr);
 		auto Right = CCNode::create();
 		Right->setAnchorPoint({1, 0});
-		Right->setContentSize({70, winSize.height / 2});
+		Right->setContentSize({65, winSize.height / 2});
 		Right->setPositionX(winSize.width - 50);
 		Right->setLayout(RowLayout::create()
 		                     ->setGap(3.f)
@@ -62,9 +95,23 @@ class $modify(endscreen, EndLevelLayer) {
 		Right->setID("right-side"_spr);
 		m_fields->m_downAnimation->addChild(Right);
 
+		auto TopRight = CCNode::create();
+		TopRight->setAnchorPoint({1, 0});
+		TopRight->setContentSize({65, winSize.height / 2 - 5});
+		TopRight->setPosition({winSize.width - 50, winSize.height / 2});
+		TopRight->setLayout(RowLayout::create()
+		                     ->setGap(3.f)
+		                     ->setAxisAlignment(AxisAlignment::End)
+		                     ->setCrossAxisAlignment(AxisAlignment::End)
+		                     ->setCrossAxisReverse(true)
+		                     ->setGrowCrossAxis(true)
+		                     ->setCrossAxisOverflow(false));
+		TopRight->setID("top-right-side"_spr);
+		m_fields->m_upAnimation->addChild(TopRight);
+
 		auto Left = CCNode::create();
 		Left->setAnchorPoint({1, 0});
-		Left->setContentSize({70, winSize.height / 2});
+		Left->setContentSize({65, winSize.height / 2});
 		Left->setPositionX(winSize.width - 120);
 		Left->setLayout(RowLayout::create()
 		                    ->setGap(3.f)
@@ -74,13 +121,97 @@ class $modify(endscreen, EndLevelLayer) {
 		                    ->setGrowCrossAxis(true)
 		                    ->setCrossAxisOverflow(false));
 		Left->setID("left-side"_spr);
-		m_fields->m_downAnimation->addChild(Left);
 
-		m_mainLayer->addChild(m_fields->m_downAnimation);
+		m_fields->m_downAnimation->addChild(Left);
+		auto TopLeft = CCNode::create();
+		TopLeft->setAnchorPoint({1, 0});
+		TopLeft->setContentSize({65, winSize.height / 2 - 5});
+		TopLeft->setPosition({winSize.width - 120, winSize.height / 2});
+		TopLeft->setLayout(RowLayout::create()
+		                     ->setGap(3.f)
+		                     ->setAxisAlignment(AxisAlignment::Start)
+		                     ->setCrossAxisAlignment(AxisAlignment::End)
+		                     ->setCrossAxisReverse(true)
+		                     ->setGrowCrossAxis(true)
+		                     ->setCrossAxisOverflow(false));
+		TopLeft->setID("top-left-side"_spr);
+		m_fields->m_upAnimation->addChild(TopLeft);
+
+
+
+		if(auto node = m_fields->m_downAnimation){
+			node->setPositionY(-500);
+			auto action = cocos2d::CCEaseExponentialOut::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), 0}));
+			node->runAction(CCWait(2.8,action));
+			this->addChild(node);
+		}
+		if(auto node = m_fields->m_upAnimation){
+			node->setPositionY( this->getContentHeight()+node->getContentHeight());
+			auto action = cocos2d::CCEaseExponentialOut::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), 0}));
+			node->runAction(CCWait(2.8,action));
+			this->addChild(node);
+		}
 		geode::Loader::get()->queueInMainThread(
-		    [wfLeft = geode::WeakRef<CCNode>(Left),
+		    [
+			 wfthis =  geode::WeakRef<endscreenRB>(this),
+			 wfLeft = geode::WeakRef<CCNode>(Left),
 		     wfRight = geode::WeakRef<CCNode>(Right),
+			 wfTopRight = geode::WeakRef<CCNode>(TopRight),
+		     wfTopLeft = geode::WeakRef<CCNode>(TopLeft),
 		     wfmainLayer = geode::WeakRef<CCNode>(m_mainLayer)] {
+				if (auto _this = wfthis.lock()) {
+					if (auto node = _this->m_sideMenu ?: _this->m_mainLayer->getChildByID("button-menu")) {
+						/* Spoof it to the old position to scan */
+						auto XPos = node->getPositionX();
+						node->setPositionX(175.5);
+						CCSize winSize = _this->m_fields->m_winSize;
+						CCPoint bottomLeft = node->convertToNodeSpace(CCPointZero);
+						CCPoint topRight = node->convertToNodeSpace(ccp(winSize.width, winSize.height));
+						CCRect screenRect = CCRectMake(
+							bottomLeft.x,
+							bottomLeft.y,
+							topRight.x - bottomLeft.x,
+							topRight.y - bottomLeft.y
+						);
+						#define setBox(varname, node) \
+							CCRect varname = CCRectMake(-100,0,0,0); \
+							if (auto k = node) varname = k->boundingBox();
+						
+						
+						setBox(retrybutton,node->getChildByID("retry-button"));
+						setBox(exitButton,node->getChildByID("exit-button"));
+						setBox(editButton,node->getChildByID("edit-button"))
+
+						#undef setBox
+						for (auto child : CCArrayExt<CCNode *>(node->getChildren())) {
+							if (child->getUserObject("handledByMod"_spr)) continue;
+							CCRect childRect = child->boundingBox();
+							//log::debug("node {} | rect: {} screenrect: {} ScreenrecMinX: {} ScreenrecMaxX{}",child, childRect, screenRect, screenRect.getMinX(), screenRect.getMaxX() );
+							if (editButton.intersectsRect(childRect) || retrybutton.intersectsRect(childRect)  || exitButton.intersectsRect(childRect) ||childRect.getMinX() < screenRect.getMinX() ||
+								childRect.getMaxX() > screenRect.getMaxX() ||
+								childRect.getMinY() < screenRect.getMinY() ||
+								childRect.getMaxY() > screenRect.getMaxY()) 
+								{
+									if (
+									auto ParentNode = (childRect.getMaxY() > screenRect.getMaxY() * 0.75) ?
+									 	wfTopLeft.lock() :wfLeft.lock()
+									) {
+										child->retain();
+										child->removeFromParentAndCleanup(false);
+										child->setPosition(CCPointZero);
+										child->ignoreAnchorPointForPosition(true);
+										auto Menu = CCMenu::create();
+										Menu->addChild(child);
+										child->release();
+										Menu->setContentSize(child->getContentSize());
+										ParentNode->addChild(Menu);
+										ParentNode->updateLayout();
+									};
+								}
+						}
+						node->setPositionX(XPos);
+					}
+				}
 			    if (auto mainLayer = wfmainLayer.lock()) {
 				    for (auto child : CCArrayExt<CCNode *>(mainLayer->getChildren())) {
 						if (child->getUserObject("handledByMod"_spr)) continue;
@@ -90,15 +221,17 @@ class $modify(endscreen, EndLevelLayer) {
 									continue;
 								item->retain();
 								item->removeFromParentAndCleanup(false);
+								item->setPosition({0,0});
 								auto Menu = CCMenu::create();
 								Menu->addChild(item);
+								item->ignoreAnchorPointForPosition(true);
 								item->release();
 								Menu->setContentSize(item->getContentSize());
-								HandleNode(mainLayer, wfLeft, wfRight, Menu);
+								HandleNode(mainLayer, wfLeft, wfRight, wfTopLeft, wfTopRight, Menu);
 							}
 							child->setVisible(false); // prevent touch being eaten + i don't remove just in case it would crash :shrug:
 						} else if (typeinfo_cast<geode::Button*>(child)) {
-							HandleNode(mainLayer, wfLeft, wfRight, child);
+							HandleNode(mainLayer, wfLeft, wfRight, wfTopLeft, wfTopRight, child);
 						}
 				    }
 			    }
@@ -109,6 +242,8 @@ class $modify(endscreen, EndLevelLayer) {
 		/* cleaned decomp by Cosmella */
 		#define ACTIONTAG 12341
 		m_hidden = !m_hidden;
+		if(m_fields->m_downAnimation) m_fields->m_downAnimation->stopActionByTag(ACTIONTAG);
+		if(m_fields->m_upAnimation) m_fields->m_upAnimation->stopActionByTag(ACTIONTAG);
 		m_mainLayer->stopActionByTag(ACTIONTAG);
 		this->stopActionByTag(ACTIONTAG);
 		int BGAlpha = 100;
@@ -118,15 +253,35 @@ class $modify(endscreen, EndLevelLayer) {
 			BGAlpha = 0;
 			x = -m_mainLayer->getContentWidth();
 			action = cocos2d::CCEaseExponentialIn::create(cocos2d::CCMoveTo::create(1.0, {x, m_mainLayer->getPositionY()}));
+			if(auto node = m_fields->m_downAnimation){
+				auto action = cocos2d::CCEaseExponentialIn::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), -500}));
+				action->setTag(ACTIONTAG);
+				node->runAction(action);
+			}
+			if(auto node = m_fields->m_upAnimation){
+				auto action = cocos2d::CCEaseExponentialIn::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), this->getContentHeight()+node->getContentHeight()}));
+				action->setTag(ACTIONTAG);
+				node->runAction(action);
+			}
 		} else {
 			action = cocos2d::CCEaseExponentialOut::create(cocos2d::CCMoveTo::create(1.0, {x, m_mainLayer->getPositionY()}));
+			if(auto node = m_fields->m_downAnimation){
+				auto action = cocos2d::CCEaseExponentialOut::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), 0}));
+				action->setTag(ACTIONTAG);
+				node->runAction(action);
+			}
+			if(auto node = m_fields->m_upAnimation){
+				auto action = cocos2d::CCEaseExponentialOut::create(cocos2d::CCMoveTo::create(1.0, {node->getPositionX(), 0}));
+				action->setTag(ACTIONTAG);
+				node->runAction(action);
+			}
 		}
 		action->setTag(ACTIONTAG);
 		m_mainLayer->runAction(action);
 		auto fade = cocos2d::CCFadeTo::create(1.0, BGAlpha);
 		fade->setTag(ACTIONTAG);
 		this->runAction(fade);
-	#undef ACTIONTAG
+		#undef ACTIONTAG
 	};
 
 	void megahackEndAnimation() {
@@ -164,16 +319,16 @@ class $modify(endscreen, EndLevelLayer) {
 	}
 	void moveCoins() {
 		auto winSize = m_fields->m_winSize;
-		auto coinOneBG = getChildFromMainLayer("coin-0-background");
-		auto coinTwoBG = getChildFromMainLayer("coin-1-background");
-		auto coinThreeBG = getChildFromMainLayer("coin-2-background");
+		auto coinOneBG = getChildFromMainLayer("coin-1-background");
+		auto coinTwoBG = getChildFromMainLayer("coin-2-background");
+		auto coinThreeBG = getChildFromMainLayer("coin-3-background");
 		// coin y = 0.266
 		//  111 170 230
 
 		if (coinOneBG) {
 			coinOneBG->setPosition(-500, winSize.height * 0.266f);
 			coinOneBG->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {111, winSize.height * 0.266f}))));
-			if (auto coinOne = getChildFromMainLayer("coin-0-sprite")) {
+			if (auto coinOne = getChildFromMainLayer("coin-1-sprite")) {
 				coinOne->setPosition(-500, winSize.height * 0.266f);
 				coinOne->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {111, winSize.height * 0.266f}))));
 			}
@@ -181,7 +336,7 @@ class $modify(endscreen, EndLevelLayer) {
 		if (coinTwoBG) {
 			coinTwoBG->setPosition(-500, winSize.height * 0.266f);
 			coinTwoBG->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {170, winSize.height * 0.266f}))));
-			if (auto coinTwo = getChildFromMainLayer("coin-1-sprite")) {
+			if (auto coinTwo = getChildFromMainLayer("coin-2-sprite")) {
 				coinTwo->setPosition(-500, winSize.height * 0.266f);
 				coinTwo->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {170, winSize.height * 0.266f}))));
 			}
@@ -189,7 +344,7 @@ class $modify(endscreen, EndLevelLayer) {
 		if (coinThreeBG) {
 			coinThreeBG->setPosition(-500, winSize.height * 0.266f);
 			coinThreeBG->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {230, winSize.height * 0.266f}))));
-			if (auto coinThree = getChildFromMainLayer("coin-2-sprite")) {
+			if (auto coinThree = getChildFromMainLayer("coin-3-sprite")) {
 				coinThree->setPosition(-500, winSize.height * 0.266f);
 				coinThree->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.5, {230, winSize.height * 0.266f}))));
 			}
@@ -283,9 +438,23 @@ class $modify(endscreen, EndLevelLayer) {
 			auto retryButton = node->getChildByID("retry-button");
 			auto exitButton = node->getChildByID("exit-button");
 			auto editButton = node->getChildByID("edit-button");
+			if (editButton){ 
+				editButton->setUserObject("handledByMod"_spr,CCBool::create(true));
+			}
+			if (exitButton){ 
+				exitButton->setUserObject("handledByMod"_spr,CCBool::create(true));
+			}
+			if (retryButton){ 
+				retryButton->setUserObject("handledByMod"_spr,CCBool::create(true));
+			}
 			if (!editButton) {
-				retryButton->setPositionX(-60);
-				exitButton->setPositionX(60);
+				if (retryButton && exitButton) {
+					retryButton->setPositionX(-60);
+					exitButton->setPositionX(60);
+				} else {
+					if (retryButton) retryButton->setPositionX(0);
+					if (exitButton) exitButton->setPositionX(0);
+				}
 			}
 			if (auto Pretry = node->getChildByID("practice-retry-button")) {
 				Pretry->setPositionX(160);
@@ -295,7 +464,13 @@ class $modify(endscreen, EndLevelLayer) {
 	}
 
 	virtual void showLayer(bool instant) { // end layer
-		EndLevelLayer::showLayer(true);
+		/*
+			when my pr gets accepted it will add this to jam!
+			zilko.jam user object to delay the jam reward
+		*/
+		this->setUserObject("zilko.jam/jam-reward-delay", CCFloat::create(3.7));
+		instant = true;
+		EndLevelLayer::showLayer(instant); 
 
 		auto director = CCDirector::get();
 		auto winSize = director->getWinSize();
@@ -314,6 +489,10 @@ class $modify(endscreen, EndLevelLayer) {
 		if (auto cright = getChildFromMainLayer("chain-right")) {
 			cright->setVisible(false);
 		}
+		if (auto qolCheat = m_mainLayer->getChildByType<qolmod::CheatIndicator*>(-1)) {
+			qolCheat->setPosition({-500, winSize.height * 0.65f});
+			qolCheat->runAction(CCWait(2.8, CCEaseExponentialOut::create(CCMoveTo::create(1.3, {40, winSize.height * 0.65f}))));
+		};
 
 		this->setOpacity(0);
 		this->runAction(cocos2d::CCFadeTo::create(1.5, 0x64u /*from decomp number is 100*/));
