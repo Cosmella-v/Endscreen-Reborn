@@ -9,4 +9,5 @@ Should any issues arise, please submit an issue on the GitHub repository.
 
 ## Credits
 
-- **Cosmella**: helped me tremendously throughout the modding process
+- **Cosmella**: Helped me tremendously throughout the modding process
+- **Suntle**: Developer
