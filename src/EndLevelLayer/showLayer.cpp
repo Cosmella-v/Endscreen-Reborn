@@ -13,29 +13,31 @@ void endScreenRB::showLayer(bool instant) { // end layer
 	this->setUserObject("zilko.jam/jam-reward-delay", CCFloat::create(3.7));
 	instant = true;
 	EndLevelLayer::showLayer(instant);
-	NodeIDs::get()->provide(this);
-	std::cout << "showLayer called" << std::endl;
+
 	auto director = CCDirector::get();
 	auto winSize = director->getWinSize();
 	m_fields->m_winSize = winSize;
-
-	geode::Loader::get()->queueInMainThread([=]{
-		if(auto node = getChildFromMainLayer("star-container")){
-			moddedFlag(node);
-			std::cout << "star container found" << std::endl;
-			node->setPositionX(winSize.width * 0.527f);
-			node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
-		};
-		if(auto node = getChildFromMainLayer("orb-container")){
-			moddedFlag(node);
-			node->setPositionX(winSize.width * 0.527f);
-			node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
-		};
-		if(auto node = getChildFromMainLayer("diamond-container")){
-			moddedFlag(node);
-			node->setPositionX(winSize.width * 0.527f);
-			node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
-		};
+	/*
+	It didn't work if we didn't queue it for some reason
+	*/
+	geode::Loader::get()->queueInMainThread([wfmainLayer = geode::WeakRef<CCNode>(m_mainLayer)]{
+		if (auto m_mainLayer = wfmainLayer.lock()) {
+			if(auto node = getChildFromMainLayer("star-container")){
+				moddedFlag(node);
+				node->setPositionX(winSize.width * 0.527f);
+				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
+			};
+			if(auto node = getChildFromMainLayer("orb-container")){
+				moddedFlag(node);
+				node->setPositionX(winSize.width * 0.527f);
+				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
+			};
+			if(auto node = getChildFromMainLayer("diamond-container")){
+				moddedFlag(node);
+				node->setPositionX(winSize.width * 0.527f);
+				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
+			};
+		}
 	});
 
 	if (auto node = getChildFromMainLayer("hide-dropdown-menu")) moddedFlag(node)
