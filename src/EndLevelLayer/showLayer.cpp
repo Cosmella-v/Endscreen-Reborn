@@ -20,9 +20,14 @@ void endScreenRB::showLayer(bool instant) { // end layer
 	/*
 	It didn't work if we didn't queue it for some reason
 	*/
-	geode::Loader::get()->queueInMainThread([wfmainLayer = geode::WeakRef<CCNode>(m_mainLayer)]{
+	geode::Loader::get()->queueInMainThread([winSize, wfmainLayer = geode::WeakRef<CCNode>(m_mainLayer)]{
 		if (auto m_mainLayer = wfmainLayer.lock()) {
 			if(auto node = getChildFromMainLayer("star-container")){
+				moddedFlag(node);
+				node->setPositionX(winSize.width * 0.527f);
+				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
+			};
+			if(auto node = getChildFromMainLayer("moon-container")){
 				moddedFlag(node);
 				node->setPositionX(winSize.width * 0.527f);
 				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
@@ -37,6 +42,11 @@ void endScreenRB::showLayer(bool instant) { // end layer
 				node->setPositionX(winSize.width * 0.527f);
 				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
 			};
+			if(auto node = getChildFromMainLayer("zilko.jam/jam-container")) {
+				moddedFlag(node);
+				node->setPositionX(winSize.width * 0.527f);
+				node->runAction(CCWait(3.7, CCEaseExponentialOut::create(CCMoveTo::create(1, {winSize.width*0.569f, node->getPositionY()}))));
+			}
 		}
 	});
 
